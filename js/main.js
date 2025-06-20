@@ -231,7 +231,10 @@ function gerarMapa(scene, caminhoMapa) {
         dfs(i-1, j);
     }
     dfs(start.i, start.j);
-
+    // Marcar o caminho no mapa
+    pathPoints.forEach(pt => {
+        map[pt.i][pt.j] = -1; // -1 indica caminho
+    });
     // Criar o path
     let p = null;
     pathPoints.forEach((pt, idx) => {
@@ -249,7 +252,7 @@ function create() {
     //criando variacao grafica da linha
     var graphics = this.add.graphics();
     path = gerarMapa(this, caminhoMapa);
-
+    
     drawGrid(graphics); // -- desenhar grade
     //estilo da linha
     graphics.lineStyle(3, 0x00ff00, 1);
