@@ -12,23 +12,141 @@
       background-color: black;
     }
 
-
     canvas {
       display: block;
       margin: auto;
+    }
+
+    #menu {
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    #menu button {
+      margin: 16px;
+      padding: 16px 48px;
+      font-size: 24px;
+      background: #333;
+      color: #5fccff;
+      border: 2px solid #032093;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    #menu button:hover {
+      background: #032093;
+      color: #fff;
+    }
+
+    #sobre {
+      color: #fff;
+      background: #222;
+      border-radius: 12px;
+      padding: 32px;
+      margin-top: 24px;
+      max-width: 500px;
+      text-align: center;
+      border: 2px solid #032093;
+      display: none;
+    }
+
+    #hud {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #222;
+      padding: 16px 0 12px 0;
+      text-align: center;
+      z-index: 10;
+      border-top: 2px solid #032093;
+      display: none;
+    }
+
+    #hud button {
+      color: #fff;
+      margin: 0 12px;
+      padding: 12px 32px;
+      font-size: 18px;
+      background: #333;
+      border: 2px solid #032093;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    #hud button:hover,
+    #hud button:focus {
+      background: #032093;
+      color: #5fccff;
     }
   </style>
 </head>
 
 <body>
   <!-- <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script> -->
-  <div id="turret-buttons" style="margin-bottom: 10px;">
-    <button onclick="selectTurret('basic')">Básica</button>
-    <button onclick="selectTurret('sniper')">Sniper</button>
-    <button onclick="selectTurret('rapid')">Rápida</button>
-  </div>
-  <script src="js/phaser.js"></script>
-  <script type="module" src="js/main.js"></script>
-</body>
+
+  <body>
+    <div id="menu">
+      <button onclick="startGame()">Jogar</button>
+      <button onclick="showSobre()">Sobre</button>
+      <div id="sobre">
+        <h2>Sobre o Jogo</h2>
+        <p>
+          Jogo feito por Felipe da Veiga Gomes, Rogerio de Abreu Mar, Logan Ail Bernardes Borges e Alex Narok Stavasz
+        </p>
+        <button onclick="hideSobre()">Voltar</button>
+      </div>
+    </div>
+    <div id="hud">
+      <button onclick="selectTurret('basic')">Básica</button>
+      <button onclick="selectTurret('sniper')">Sniper</button>
+      <button onclick="selectTurret('rapid')">Rápida</button>
+    </div>
+    <div id="game-container"></div>
+    <script type="module">
+      // import { config } from './js/main.js';
+      var config = {
+        type: Phaser.AUTO,
+        parent: 'game-container', // <- Corrija aqui!
+        width: 1280,
+        height: 1024,
+        physics: {
+          default: 'arcade',
+        },
+        scene: {
+          key: 'main',
+          preload: window.preload,
+          create: window.create,
+          update: window.update
+        },
+      }
+
+      window.startGame = function () {
+        document.getElementById('menu').style.display = 'none';
+        document.getElementById('hud').style.display = 'block';
+
+        var game = new Phaser.Game(config);
+
+      }
+      window.showSobre = function () {
+        document.getElementById('sobre').style.display = 'block';
+      }
+      window.hideSobre = function () {
+        document.getElementById('sobre').style.display = 'none';
+      }
+    </script>
+    <script src="js/phaser.js"></script>
+    <script src="js/main.js"></script>
 
 </html>

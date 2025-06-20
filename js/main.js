@@ -14,7 +14,7 @@ var config = {
         update: update
     },
 }
-var game = new Phaser.Game(config);
+// var game = new Phaser.Game(config);
 var graphics;
 var path;
 var enemies;
@@ -338,3 +338,7 @@ function addBullet(x, y, angle,damage) {
         bullet.fire(x, y, angle, damage); // -- disparar bala
     }
 }
+
+window.preload = preload;
+window.create = create;
+window.update = update;
