@@ -35,8 +35,8 @@ for (let i = 0; i < mapRows; i++) {
     map.push(row);
 }
 const TURRET_TYPES = {
-    basic: { range: 100, damage: 50, fireRate: 1000, sprite: 'basic' },
-    sniper: { range: 200, damage: 150, fireRate: 2000, sprite: 'sniper' },
+    basic: { range: 100, damage: 50, fireRate: 600, sprite: 'basic' },
+    sniper: { range: 200, damage: 150, fireRate: 1000, sprite: 'sniper' },
     rapid: { range: 80, damage: 20, fireRate: 300, sprite: 'rapid' }
 };
 const ENEMY_TYPES = {
@@ -74,21 +74,21 @@ var Enemy = new Phaser.Class({
             this.baseSpeed = ENEMY_TYPES.normal.speed;
         },
     startOnPath: function (path, type = 'normal') {
-    this.type = type;
-    this.hp = ENEMY_TYPES[type].hp;
-    this.baseSpeed = ENEMY_TYPES[type].speed;
-    // Toca a animação correta
-    if (type === 'normal') {
-        this.play('mob_normal_walk');
-    } else if (type === 'fast') {
-        this.play('mob_fast_walk');
-    } else if (type === 'tank') {
-        this.play('mob_tank_walk');
-    }
-    this.follower.t = 0;
-    path.getPoint(this.follower.t, this.follower.vec);
-    this.setPosition(this.follower.vec.x, this.follower.vec.y);
-},
+        this.type = type;
+        this.hp = ENEMY_TYPES[type].hp;
+        this.baseSpeed = ENEMY_TYPES[type].speed;
+        // Toca a animação correta
+        if (type === 'normal') {
+            this.play('mob_normal_walk');
+        } else if (type === 'fast') {
+            this.play('mob_fast_walk');
+        } else if (type === 'tank') {
+            this.play('mob_tank_walk');
+        }
+        this.follower.t = 0;
+        path.getPoint(this.follower.t, this.follower.vec);
+        this.setPosition(this.follower.vec.x, this.follower.vec.y);
+    },
     receiveDamage: function (damage) {
         this.hp -= damage;
         if (this.hp <= 0) {
@@ -129,7 +129,7 @@ var Turret = new Phaser.Class({
             this.range = TURRET_TYPES.basic.range;
             this.damage = TURRET_TYPES.basic.damage;
             this.fireRate = TURRET_TYPES.basic.fireRate;
-            this.level = 1; 
+            this.level = 1;
         },
     setType: function (type) {
         this.type = type;
@@ -137,7 +137,7 @@ var Turret = new Phaser.Class({
         this.damage = TURRET_TYPES[type].damage;
         this.fireRate = TURRET_TYPES[type].fireRate;
         this.setTexture('sprites', TURRET_TYPES[type].sprite);
-        this.level = 1; 
+        this.level = 1;
     },
     upgrade: function () {
         this.level++;
@@ -151,6 +151,7 @@ var Turret = new Phaser.Class({
         this.x = j * 64 + 32;
         map[i][j] = 1;
         this.setType(type);
+        this.setInteractive();
     },
     fire: function () {
         var enemy = getEnemy(this.x, this.y, this.range);
@@ -351,7 +352,17 @@ function create() {
     this.physics.add.overlap(enemies, bullets, damageEnemy); // -- colisao entre inimigo e bala
 
     this.input.on('pointerdown', placeTurret); // -- colocar torre ao clicar
-    this.input.on('pointerdown', upgradeTurret);
+    // this.input.on('pointerdown', upgradeTurret);
+
+    this.input.on('gameobjectdown', function (pointer, gameObject) {
+        if (gameObject instanceof Turret) {
+            AbrirHudTorre(gameObject);
+        }
+    });
+    turrets.children.iterate(function (turret) {
+        turret.setInteractive();
+    });
+
 }
 function damageEnemy(enemy, bullet) {
     if (enemy.active && bullet.active) {
@@ -426,6 +437,35 @@ function upgradeTurret(pointer) {
         }
     }
 }
+
+var selectedTurret = null;
+
+function AbrirHudTorre(turret) {
+    selectedTurret = turret;
+    document.getElementById('turret-info').style.display = 'block';
+    document.getElementById('turret-type').innerText = turret.type.toUpperCase();
+    document.getElementById('turret-level').innerText = 'Nível: ' + turret.level;
+    document.getElementById('turret-range').innerText = turret.range;
+    document.getElementById('turret-damage').innerText = turret.damage;
+    document.getElementById('turret-speed').innerText = (1000 / turret.fireRate).toFixed(2) + '/s';
+}
+
+function FecharHudTorre() {
+    document.getElementById('turret-info').style.display = 'none';
+    selectedTurret = null;
+}
+
+document.getElementById('close-turret-info').onclick = FecharHudTorre;
+document.getElementById('upgrade-btn').onclick = function () {
+    if (selectedTurret) {
+        selectedTurret.upgrade();
+        AbrirHudTorre(selectedTurret); // Atualiza painel
+    }
+};
+
+
+
+
 
 window.preload = preload;
 window.create = create;
