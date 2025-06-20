@@ -52,6 +52,10 @@ function preload() {
     //carregar assets
     this.load.atlas('sprites', 'assets/spritesheet.png', 'assets/spritesheet.json');
     this.load.image('bullet', 'assets/bullet.png');
+    this.load.image('grass', 'assets/grass.png');
+    this.load.image('road', 'assets/pedra.png');
+    this.load.image('end', 'assets/tnt.png');
+    this.load.image('start', 'assets/start.png');
 }
 
 var Enemy = new Phaser.Class({
@@ -182,22 +186,22 @@ var Bullet = new Phaser.Class({
 })
 
 var caminhoMapa = [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,], 
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,], 
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,], 
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+    [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,],
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+    [1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,],
+    [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,],
+    [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,],
+    [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
 ];
 function gerarMapa(scene, caminhoMapa) {
     // Encontrar o ponto inicial (primeiro 1 na primeira coluna)
@@ -205,7 +209,7 @@ function gerarMapa(scene, caminhoMapa) {
     for (let i = 0; i < caminhoMapa.length; i++) {
         for (let j = 0; j < caminhoMapa[i].length; j++) {
             if (caminhoMapa[i][j] === 1) {
-                start = {i, j};
+                start = { i, j };
                 break;
             }
         }
@@ -213,7 +217,7 @@ function gerarMapa(scene, caminhoMapa) {
     }
 
     // Busca sequencial pelo caminho (DFS simples)
-    let visited = Array.from({length: caminhoMapa.length}, () => Array(caminhoMapa[0].length).fill(false));
+    let visited = Array.from({ length: caminhoMapa.length }, () => Array(caminhoMapa[0].length).fill(false));
     let pathPoints = [];
     function dfs(i, j) {
         if (
@@ -223,12 +227,12 @@ function gerarMapa(scene, caminhoMapa) {
             visited[i][j]
         ) return;
         visited[i][j] = true;
-        pathPoints.push({i, j});
+        pathPoints.push({ i, j });
         // Ordem: direita, baixo, esquerda, cima
-        dfs(i, j+1);
-        dfs(i+1, j);
-        dfs(i, j-1);
-        dfs(i-1, j);
+        dfs(i, j + 1);
+        dfs(i + 1, j);
+        dfs(i, j - 1);
+        dfs(i - 1, j);
     }
     dfs(start.i, start.j);
     // Marcar o caminho no mapa
@@ -248,15 +252,38 @@ function gerarMapa(scene, caminhoMapa) {
     });
     return p;
 }
+function texturaMapa(scene, caminhoMapa) {
+    for (let i = 0; i < caminhoMapa.length; i++) {
+        for (let j = 0; j < caminhoMapa[i].length; j++) {
+            let tipo = caminhoMapa[i][j];
+            let x = j * tileSize + tileSize / 2;
+            let y = i * tileSize + tileSize / 2;
+            if (tipo === 1) {
+                scene.add.image(x, y, 'road').setDisplaySize(tileSize, tileSize);
+            } else if (tipo === 3) {
+                scene.add.image(x, y, 'end').setDisplaySize(tileSize, tileSize);
+            }
+            else if (tipo === 2) {
+                scene.add.image(x, y, 'start').setDisplaySize(tileSize, tileSize);
+            }else{
+                scene.add.image(x, y, 'grass').setDisplaySize(tileSize, tileSize);
+            }
+        }
+    }
+}
 function create() {
+    //colocando textura no mapa
+     texturaMapa(this, caminhoMapa);
     //criando variacao grafica da linha
     var graphics = this.add.graphics();
     path = gerarMapa(this, caminhoMapa);
-    
+
     drawGrid(graphics); // -- desenhar grade
+   
     //estilo da linha
-    graphics.lineStyle(3, 0x00ff00, 1);
-    path.draw(graphics);
+ 
+    // graphics.lineStyle(3, 0x00ff00, 1);
+    // path.draw(graphics);
 
     //criar inimigo
     enemies = this.physics.add.group({
@@ -319,7 +346,7 @@ function update(time, delta) {
 }
 
 function canPlaceTurret(i, j) {
-    return map[i][j] === 0; // -- verificar se a posicao esta livre
+     return caminhoMapa[i][j] === 0 && map[i][j] === 0; // -- verificar se a posicao esta livre
 }
 function placeTurret(pointer) {
     var i = Math.floor(pointer.y / 64);
@@ -335,7 +362,7 @@ function placeTurret(pointer) {
         console.log('Posicao ocupada');
     }
 }
-function addBullet(x, y, angle,damage) {
+function addBullet(x, y, angle, damage) {
     var bullet = bullets.get();
     if (bullet) {
         bullet.fire(x, y, angle, damage); // -- disparar bala
