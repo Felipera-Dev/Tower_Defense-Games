@@ -1,0 +1,13 @@
+{
+  "frames": {
+    "basic":  { "frame": { "x": 254, "y": 13, "w": 52, "h": 74 } },
+    "sniper": { "frame": { "x": 11,  "y": 15, "w": 52, "h": 72 } },
+    "rapid":  { "frame": { "x": 132, "y": 15, "w": 52, "h": 72 } },
+    "sprite4":{ "frame": { "x": 375, "y": 15, "w": 53, "h": 72 } }
+  },
+  "meta": {
+    "image": "soldiers.png",
+    "size": { "w": 446, "h": 88 },
+    "scale": "1"
+  }
+}

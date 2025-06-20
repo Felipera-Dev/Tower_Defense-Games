@@ -35,9 +35,9 @@ for (let i = 0; i < mapRows; i++) {
     map.push(row);
 }
 const TURRET_TYPES = {
-    basic: { range: 100, damage: 50, fireRate: 1000, sprite: 'turret' },
-    sniper: { range: 200, damage: 150, fireRate: 2000, sprite: 'turret' },
-    rapid: { range: 80, damage: 20, fireRate: 300, sprite: 'turret' }
+    basic: { range: 100, damage: 50, fireRate: 1000, sprite: 'basic' },
+    sniper: { range: 200, damage: 150, fireRate: 2000, sprite: 'sniper' },
+    rapid: { range: 80, damage: 20, fireRate: 300, sprite: 'rapid' }
 };
 const ENEMY_TYPES = {
     normal: { hp: 100, speed: 0.6, sprite: 'sprite1' },
@@ -54,7 +54,8 @@ function selectTurret(type) {
 
 function preload() {
     //carregar assets
-    this.load.atlas('sprites', 'assets/spritesheet.png', 'assets/spritesheet.json');
+    // this.load.atlas('sprites', 'assets/spritesheet.png', 'assets/spritesheet.json');
+    this.load.atlas('sprites', 'assets/soldiers.png', 'assets/soldiers.json');
     this.load.atlas('mobs', 'assets/mobs.png', 'assets/mobs.json');
     this.load.image('bullet', 'assets/bullet.png');
     this.load.image('grass', 'assets/grass.png');
@@ -122,12 +123,13 @@ var Turret = new Phaser.Class({
     Extends: Phaser.GameObjects.Image,
     initialize:
         function Turret(scene) {
-            Phaser.GameObjects.Image.call(this, scene, 0, 0, 'sprites', 'turret');
+            Phaser.GameObjects.Image.call(this, scene, 0, 0, 'sprites', 'sprite4');
             this.nextTick = 0;
             this.type = 'basic'; // tipo padrão
             this.range = TURRET_TYPES.basic.range;
             this.damage = TURRET_TYPES.basic.damage;
             this.fireRate = TURRET_TYPES.basic.fireRate;
+            this.level = 1; 
         },
     setType: function (type) {
         this.type = type;
@@ -135,6 +137,14 @@ var Turret = new Phaser.Class({
         this.damage = TURRET_TYPES[type].damage;
         this.fireRate = TURRET_TYPES[type].fireRate;
         this.setTexture('sprites', TURRET_TYPES[type].sprite);
+        this.level = 1; 
+    },
+    upgrade: function () {
+        this.level++;
+        this.damage = Math.round(this.damage * 1.5);
+        this.range = Math.round(this.range * 1.2);
+        this.fireRate = Math.round(this.fireRate * 1.2);
+        console.log('Torre upada para o nível', this.level);
     },
     place: function (i, j, type = 'basic') {
         this.y = i * 64 + 32;
@@ -341,6 +351,7 @@ function create() {
     this.physics.add.overlap(enemies, bullets, damageEnemy); // -- colisao entre inimigo e bala
 
     this.input.on('pointerdown', placeTurret); // -- colocar torre ao clicar
+    this.input.on('pointerdown', upgradeTurret);
 }
 function damageEnemy(enemy, bullet) {
     if (enemy.active && bullet.active) {
@@ -400,6 +411,19 @@ function addBullet(x, y, angle, damage) {
     var bullet = bullets.get();
     if (bullet) {
         bullet.fire(x, y, angle, damage); // -- disparar bala
+    }
+}
+function upgradeTurret(pointer) {
+    if (pointer.rightButtonDown()) {
+        var i = Math.floor(pointer.y / 64);
+        var j = Math.floor(pointer.x / 64);
+        var turretsArr = turrets.getChildren();
+        for (let t of turretsArr) {
+            if (t.active && Math.floor(t.x / 64) === j && Math.floor(t.y / 64) === i) {
+                t.upgrade();
+                break;
+            }
+        }
     }
 }
 
