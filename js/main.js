@@ -2,8 +2,8 @@
 var config = {
     type: Phaser.AUTO,
     parent: 'content',
-    width: 640,
-    height: 512,
+    width: 1280,
+    height: 1024,
     physics: {
         default: 'arcade',
     },
@@ -20,16 +20,33 @@ var path;
 var enemies;
 var turrets;
 var bullets;
-var ENEMY_SPEED = 2 / 10000; // velocidade do inimigo
+var ENEMY_SPEED = 0.5 / 10000; // velocidade do inimigo
 var BULLET_DAMAGE = 50
-var map = [[0, -1, 0, 0, 0, 0, 0, 0, 0, 0],
-[0, -1, 0, 0, 0, 0, 0, 0, 0, 0],
-[0, -1, -1, -1, -1, -1, -1, -1, 0, 0],
-[0, 0, 0, 0, 0, 0, 0, -1, 0, 0],
-[0, 0, 0, 0, 0, 0, 0, -1, 0, 0],
-[0, 0, 0, 0, 0, 0, 0, -1, 0, 0],
-[0, 0, 0, 0, 0, 0, 0, -1, 0, 0],
-[0, 0, 0, 0, 0, 0, 0, -1, 0, 0]];
+var tileSize = 64;
+var mapRows = Math.floor(config.height / tileSize);
+var mapCols = Math.floor(config.width / tileSize);
+
+var map = [];
+for (let i = 0; i < mapRows; i++) {
+    let row = [];
+    for (let j = 0; j < mapCols; j++) {
+        row.push(0); // 0 = livre, -1 = caminho, 1 = torre
+    }
+    map.push(row);
+}
+const TURRET_TYPES = {
+    basic: { range: 100, damage: 50, fireRate: 1000, sprite: 'turret' },
+    sniper: { range: 200, damage: 150, fireRate: 2000, sprite: 'turret' },
+    rapid: { range: 80, damage: 20, fireRate: 300, sprite: 'turret' }
+};
+
+
+var selectedTurretType = 'basic';
+
+function selectTurret(type) {
+    selectedTurretType = type;
+    console.log('Tipo de torre selecionado:', type);
+} window.selectTurret = selectTurret;
 
 function preload() {
     //carregar assets
@@ -98,29 +115,37 @@ var Turret = new Phaser.Class({
     initialize:
         function Turret(scene) {
             Phaser.GameObjects.Image.call(this, scene, 0, 0, 'sprites', 'turret');
-            this.nextTick = 0; // -- tempo para a torre atirar
-
+            this.nextTick = 0;
+            this.type = 'basic'; // tipo padrão
+            this.range = TURRET_TYPES.basic.range;
+            this.damage = TURRET_TYPES.basic.damage;
+            this.fireRate = TURRET_TYPES.basic.fireRate;
         },
-    place: function (i, j) {
-        this.y = i * 64 + 32; // -- posicao y do canhao
-        this.x = j * 64 + 32; // -- posicao x do canhao
-        map[i][j] = 1; // -- marcar posicao do canhao no mapa
+    setType: function (type) {
+        this.type = type;
+        this.range = TURRET_TYPES[type].range;
+        this.damage = TURRET_TYPES[type].damage;
+        this.fireRate = TURRET_TYPES[type].fireRate;
+        this.setTexture('sprites', TURRET_TYPES[type].sprite);
+    },
+    place: function (i, j, type = 'basic') {
+        this.y = i * 64 + 32;
+        this.x = j * 64 + 32;
+        map[i][j] = 1;
+        this.setType(type);
     },
     fire: function () {
-        var enemy = getEnemy(this.x, this.y, 100); // -- pegar inimigo mais proximo  
+        var enemy = getEnemy(this.x, this.y, this.range);
         if (enemy) {
-            // -- calcular angulo do tiro
             var angle = Phaser.Math.Angle.Between(this.x, this.y, enemy.x, enemy.y);
-            addBullet(this.x, this.y, angle);
-            this.angle = (angle + Math.PI / 2) * Phaser.Math.RAD_TO_DEG; // -- rotacionar canhao para o angulo do tiro
+            addBullet(this.x, this.y, angle, this.damage);
+            this.angle = (angle + Math.PI / 2) * Phaser.Math.RAD_TO_DEG;
         }
     },
     update: function (time, delta) {
-        //atualizar canhao
-        //tempo para atirar
         if (time > this.nextTick) {
-            this.fire(); // -- disparar canhao
-            this.nextTick = time + 1000; // -- proximo tiro em 1 segundo
+            this.fire();
+            this.nextTick = time + this.fireRate;
         }
     }
 });
@@ -133,14 +158,14 @@ var Bullet = new Phaser.Class({
             this.dx = 0; // -- deslocamento x do tiro
             this.dy = 0; // -- deslocamento y do tiro
             this.lifespan = 1000; // -- tempo de vida do tiro
-            this.speed = Phaser.Math.GetSpeed(600, 1); // -- velocidade do tiro
+            this.speed = Phaser.Math.GetSpeed(1200, 1); // -- velocidade do tiro
 
         },
-    fire: function (x, y, angle) {
+    fire: function (x, y, angle, damage) {
         this.setActive(true);
         this.setVisible(true);
         this.setPosition(x, y);
-
+        this.damage = damage;
         this.dx = Math.cos(angle)
         this.dy = Math.sin(angle)
         this.lifespan = 1000; // -- reiniciar tempo de vida do tiro
@@ -156,13 +181,75 @@ var Bullet = new Phaser.Class({
     }
 })
 
+var caminhoMapa = [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,], 
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,], 
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,], 
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+];
+function gerarMapa(scene, caminhoMapa) {
+    // Encontrar o ponto inicial (primeiro 1 na primeira coluna)
+    let start = null;
+    for (let i = 0; i < caminhoMapa.length; i++) {
+        for (let j = 0; j < caminhoMapa[i].length; j++) {
+            if (caminhoMapa[i][j] === 1) {
+                start = {i, j};
+                break;
+            }
+        }
+        if (start) break;
+    }
+
+    // Busca sequencial pelo caminho (DFS simples)
+    let visited = Array.from({length: caminhoMapa.length}, () => Array(caminhoMapa[0].length).fill(false));
+    let pathPoints = [];
+    function dfs(i, j) {
+        if (
+            i < 0 || i >= caminhoMapa.length ||
+            j < 0 || j >= caminhoMapa[0].length ||
+            caminhoMapa[i][j] !== 1 ||
+            visited[i][j]
+        ) return;
+        visited[i][j] = true;
+        pathPoints.push({i, j});
+        // Ordem: direita, baixo, esquerda, cima
+        dfs(i, j+1);
+        dfs(i+1, j);
+        dfs(i, j-1);
+        dfs(i-1, j);
+    }
+    dfs(start.i, start.j);
+
+    // Criar o path
+    let p = null;
+    pathPoints.forEach((pt, idx) => {
+        let x = pt.j * tileSize + tileSize / 2;
+        let y = pt.i * tileSize + tileSize / 2;
+        if (idx === 0) {
+            p = scene.add.path(x, y);
+        } else {
+            p.lineTo(x, y);
+        }
+    });
+    return p;
+}
 function create() {
     //criando variacao grafica da linha
     var graphics = this.add.graphics();
-    path = this.add.path(96, -32);
-    path.lineTo(96, 164);
-    path.lineTo(480, 164);
-    path.lineTo(480, 544);
+    path = gerarMapa(this, caminhoMapa);
+
     drawGrid(graphics); // -- desenhar grade
     //estilo da linha
     graphics.lineStyle(3, 0x00ff00, 1);
@@ -195,28 +282,27 @@ function damageEnemy(enemy, bullet) {
     if (enemy.active && bullet.active) {
         bullet.setActive(false); // -- desativar bala
         bullet.setVisible(false); // -- esconder bala
-        enemy.receiveDamage(BULLET_DAMAGE); // -- inimigo recebe dano
-    }
-    if (!enemy.active) {
-        console.log('Inimigo morto');
+        enemy.receiveDamage(bullet.damage); // -- inimigo recebe dano
+        console.log('Inimigo atingido! HP restante:', enemy.hp);
     }
 }
 
 function drawGrid(graphics) {
     graphics.lineStyle(1, 0x00ff00, 0.2);
-    for (var i = 0; i < 8; i++) {
-        graphics.moveTo(0, i * 64);
-        graphics.lineTo(640, i * 64);
+    for (var i = 0; i <= mapRows; i++) {
+        graphics.moveTo(0, i * tileSize);
+        graphics.lineTo(mapCols * tileSize, i * tileSize);
     }
-    for (var j = 0; j < 512; j++) {
-        graphics.moveTo(j * 64, 0);
-        graphics.lineTo(j * 64, 512);
+    for (var j = 0; j <= mapCols; j++) {
+        graphics.moveTo(j * tileSize, 0);
+        graphics.lineTo(j * tileSize, mapRows * tileSize);
     }
     graphics.strokePath();
 }
 
 function update(time, delta) {
     //quando o proximo inimigo deve ser criado
+
     if (time > this.nextEnemy) {
         var enemy = enemies.get();
         if (enemy) {
@@ -233,24 +319,22 @@ function canPlaceTurret(i, j) {
     return map[i][j] === 0; // -- verificar se a posicao esta livre
 }
 function placeTurret(pointer) {
-    // -- pegar posicao do clique
     var i = Math.floor(pointer.y / 64);
     var j = Math.floor(pointer.x / 64);
-    // -- verificar se a posicao esta livre
     if (canPlaceTurret(i, j)) {
         var turret = turrets.get();
         if (turret) {
             turret.setActive(true);
             turret.setVisible(true);
-            turret.place(i, j); // -- colocar torre na posicao
+            turret.place(i, j, selectedTurretType); // Passe o tipo selecionado
         }
     } else {
         console.log('Posicao ocupada');
     }
 }
-function addBullet(x, y, angle) {
+function addBullet(x, y, angle,damage) {
     var bullet = bullets.get();
     if (bullet) {
-        bullet.fire(x, y, angle); // -- disparar bala
+        bullet.fire(x, y, angle, damage); // -- disparar bala
     }
 }
