@@ -20,7 +20,7 @@ var path;
 var enemies;
 var turrets;
 var bullets;
-var ENEMY_SPEED = 0.5 / 10000; // velocidade do inimigo
+var ENEMY_SPEED = 0.2 / 10000; // velocidade do inimigo
 var BULLET_DAMAGE = 50
 var tileSize = 64;
 var mapRows = Math.floor(config.height / tileSize);
@@ -39,7 +39,11 @@ const TURRET_TYPES = {
     sniper: { range: 200, damage: 150, fireRate: 2000, sprite: 'turret' },
     rapid: { range: 80, damage: 20, fireRate: 300, sprite: 'turret' }
 };
-
+const ENEMY_TYPES = {
+    normal: { hp: 100, speed: 0.6, sprite: 'sprite1' },
+    fast: { hp: 50, speed: 1, sprite: 'sprite5' },
+    tank: { hp: 300, speed: 0.3, sprite: 'sprite10' }
+};
 
 var selectedTurretType = 'basic';
 
@@ -51,6 +55,7 @@ function selectTurret(type) {
 function preload() {
     //carregar assets
     this.load.atlas('sprites', 'assets/spritesheet.png', 'assets/spritesheet.json');
+    this.load.atlas('mobs', 'assets/mobs.png', 'assets/mobs.json');
     this.load.image('bullet', 'assets/bullet.png');
     this.load.image('grass', 'assets/grass.png');
     this.load.image('road', 'assets/pedra.png');
@@ -59,43 +64,42 @@ function preload() {
 }
 
 var Enemy = new Phaser.Class({
-    Extends: Phaser.GameObjects.Image,
+    Extends: Phaser.GameObjects.Sprite,
     initialize:
         function Enemy(scene) {
-            Phaser.GameObjects.Image.call(this, scene, 0, 0, 'sprites', 'enemy');
-            this.follower = { t: 0, vec: new Phaser.Math.Vector2() }; // -- progresso do inmigo na linha
-
+            Phaser.GameObjects.Sprite.call(this, scene, 0, 0, 'mobs', 'sprite1');
+            this.follower = { t: 0, vec: new Phaser.Math.Vector2() };
+            this.type = 'normal';
+            this.baseSpeed = ENEMY_TYPES.normal.speed;
         },
-    startOnPath:
-        function () {
-            //paramentro do inicio do inimigo na linha
-            this.follower.t = 0; // -- reiniciar progresso do inimigo na linha
-            this.hp = 100;
-
-            //pegar x e y do ponto T
-            path.getPoint(this.follower.t, this.follower.vec);
-            // -- posicionar inimigo na linha
-            this.setPosition(this.follower.vec.x, this.follower.vec.y);
-        },
+    startOnPath: function (path, type = 'normal') {
+    this.type = type;
+    this.hp = ENEMY_TYPES[type].hp;
+    this.baseSpeed = ENEMY_TYPES[type].speed;
+    // Toca a animação correta
+    if (type === 'normal') {
+        this.play('mob_normal_walk');
+    } else if (type === 'fast') {
+        this.play('mob_fast_walk');
+    } else if (type === 'tank') {
+        this.play('mob_tank_walk');
+    }
+    this.follower.t = 0;
+    path.getPoint(this.follower.t, this.follower.vec);
+    this.setPosition(this.follower.vec.x, this.follower.vec.y);
+},
     receiveDamage: function (damage) {
-        this.hp -= damage; // -- diminuir vida do inimigo
+        this.hp -= damage;
         if (this.hp <= 0) {
             this.setActive(false);
             this.setVisible(false);
-            // console.log('Inimigo morto');
         }
     },
     update: function (time, delta) {
-        //atualizar posicao do inimigo
-        this.follower.t += ENEMY_SPEED * delta;
-        //novas cordenadas do inimigo
+        this.follower.t += ENEMY_SPEED * this.baseSpeed * delta;
         path.getPoint(this.follower.t, this.follower.vec);
-        //coloca o inimigo na nova posicao
         this.setPosition(this.follower.vec.x, this.follower.vec.y);
-        //se inimigo sair do caminho, remover ele
         if (this.follower.t > 1) {
-            // this.destroy();
-            // console.log('Inimigo chegou ao final do caminho');
             this.setActive(false);
             this.setVisible(false);
         }
@@ -187,11 +191,11 @@ var Bullet = new Phaser.Class({
 
 var caminhoMapa = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
-    [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,],
+    [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
@@ -265,7 +269,7 @@ function texturaMapa(scene, caminhoMapa) {
             }
             else if (tipo === 2) {
                 scene.add.image(x, y, 'start').setDisplaySize(tileSize, tileSize);
-            }else{
+            } else {
                 scene.add.image(x, y, 'grass').setDisplaySize(tileSize, tileSize);
             }
         }
@@ -273,19 +277,49 @@ function texturaMapa(scene, caminhoMapa) {
 }
 function create() {
     //colocando textura no mapa
-     texturaMapa(this, caminhoMapa);
+    texturaMapa(this, caminhoMapa);
     //criando variacao grafica da linha
     var graphics = this.add.graphics();
     path = gerarMapa(this, caminhoMapa);
 
     drawGrid(graphics); // -- desenhar grade
-   
+
     //estilo da linha
- 
+
     // graphics.lineStyle(3, 0x00ff00, 1);
     // path.draw(graphics);
 
     //criar inimigo
+
+    this.anims.create({
+        key: 'mob_normal_walk',
+        frames: [
+            { key: 'mobs', frame: 'sprite1' },
+            { key: 'mobs', frame: 'sprite2' },
+            { key: 'mobs', frame: 'sprite3' },
+            { key: 'mobs', frame: 'sprite4' }
+        ],
+        frameRate: 8,
+        repeat: -1
+    });
+    this.anims.create({
+        key: 'mob_fast_walk',
+        frames: [
+            { key: 'mobs', frame: 'sprite5' },
+            { key: 'mobs', frame: 'sprite6' }
+        ],
+        frameRate: 12,
+        repeat: -1
+    });
+    this.anims.create({
+        key: 'mob_tank_walk',
+        frames: [
+            { key: 'mobs', frame: 'sprite10' },
+            { key: 'mobs', frame: 'sprite11' }
+        ],
+        frameRate: 6,
+        repeat: -1
+    });
     enemies = this.physics.add.group({
         classType: Enemy,
         runChildUpdate: true
@@ -331,22 +365,22 @@ function drawGrid(graphics) {
 }
 
 function update(time, delta) {
-    //quando o proximo inimigo deve ser criado
-
     if (time > this.nextEnemy) {
         var enemy = enemies.get();
         if (enemy) {
             enemy.setActive(true);
             enemy.setVisible(true);
-            enemy.startOnPath(path);
-            this.nextEnemy = time + Phaser.Math.Between(1000, 2000); // -- proximo inimigo entre 1 e 2 segundos
+            // Sorteia tipo de inimigo
+            let tipos = ['normal', 'fast', 'tank'];
+            let tipo = Phaser.Utils.Array.GetRandom(tipos);
+            enemy.startOnPath(path, tipo);
+            this.nextEnemy = time + Phaser.Math.Between(1000, 2000);
         }
     }
-
 }
 
 function canPlaceTurret(i, j) {
-     return caminhoMapa[i][j] === 0 && map[i][j] === 0; // -- verificar se a posicao esta livre
+    return caminhoMapa[i][j] === 0 && map[i][j] === 0; // -- verificar se a posicao esta livre
 }
 function placeTurret(pointer) {
     var i = Math.floor(pointer.y / 64);
