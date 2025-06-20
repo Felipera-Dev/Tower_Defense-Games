@@ -15,11 +15,13 @@ var config = {
     },
 }
 // var game = new Phaser.Game(config);
+var rangeCircle = null;
 var graphics;
 var path;
 var enemies;
 var turrets;
 var bullets;
+var mainScene = null;
 var ENEMY_SPEED = 0.2 / 10000; // velocidade do inimigo
 var BULLET_DAMAGE = 50
 var tileSize = 64;
@@ -287,6 +289,7 @@ function texturaMapa(scene, caminhoMapa) {
     }
 }
 function create() {
+    mainScene = this; // -- salvar referencia da cena principal
     //colocando textura no mapa
     texturaMapa(this, caminhoMapa);
     //criando variacao grafica da linha
@@ -357,8 +360,9 @@ function create() {
     this.input.on('gameobjectdown', function (pointer, gameObject) {
         if (gameObject instanceof Turret) {
             AbrirHudTorre(gameObject);
+            showRangeCircle(this, gameObject);
         }
-    });
+    }, this);
     turrets.children.iterate(function (turret) {
         turret.setInteractive();
     });
@@ -455,15 +459,33 @@ function FecharHudTorre() {
     selectedTurret = null;
 }
 
-document.getElementById('close-turret-info').onclick = FecharHudTorre;
+document.getElementById('close-turret-info').onclick = function () {
+    FecharHudTorre();
+    hideRangeCircle();
+};
+
 document.getElementById('upgrade-btn').onclick = function () {
     if (selectedTurret) {
         selectedTurret.upgrade();
         AbrirHudTorre(selectedTurret); // Atualiza painel
+        showRangeCircle(mainScene, selectedTurret);
     }
 };
-
-
+function showRangeCircle(scene, turret) {
+    if (rangeCircle) rangeCircle.destroy();
+    rangeCircle = scene.add.graphics({ x: turret.x, y: turret.y });
+    rangeCircle.fillStyle(0x5fccff, 0.2); // cor azul clara, 20% opaco
+    rangeCircle.lineStyle(3, 0x5fccff, 0.8); // borda azul
+    rangeCircle.fillCircle(0, 0, turret.range);
+    rangeCircle.strokeCircle(0, 0, turret.range);
+    rangeCircle.setDepth(1000); // garantir que fique acima dos sprites
+}
+function hideRangeCircle() {
+    if (rangeCircle) {
+        rangeCircle.destroy();
+        rangeCircle = null;
+    }
+}
 
 
 
