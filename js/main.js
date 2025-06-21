@@ -24,8 +24,8 @@ var vidas = 3;
 var vidasText;
 var money = 200;
 var moneyText;
-const UPGRADE_COST = 80; // custo fixo para upar (pode ser por tipo/nível se quiser)
-const ENEMY_REWARD = 25;
+const UPGRADE_COST = 150; // custo fixo para upar (pode ser por tipo/nível se quiser)
+const ENEMY_REWARD = 15;
 var rangeCircle = null;
 var graphics;
 var path;
