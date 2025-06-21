@@ -82,6 +82,7 @@ function preload() {
     this.load.audio('spawn_sniper', 'assets/spawn_sniper.mp3');
     this.load.audio('spawn_fast', 'assets/spawn_fast.mp3');
     this.load.audio('spawn_soldier', 'assets/spawn_soldier.mp3');
+    this.load.audio('new_wave', 'assets/new_wave.mp3');
 }
 
 var Enemy = new Phaser.Class({
@@ -422,14 +423,14 @@ function create() {
         padding: { x: 10, y: 5 }
     });
     vidasText.setScrollFactor(0);
-    moneyText = this.add.text(16, 16, 'Dinheiro: $' + money, {
+    moneyText = this.add.text(250, 56, 'Dinheiro: $' + money, {
         fontSize: '32px',
         fill: '#fff',
         backgroundColor: 'green',
         padding: { x: 10, y: 5 }
     });
     moneyText.setScrollFactor(0);
-    waveText = this.add.text(16, 96, 'Wave: ' + wave, {
+    waveText = this.add.text(1100, 56, 'Wave: ' + wave, {
         fontSize: '32px',
         fill: '#fff',
         backgroundColor: '#444',
@@ -466,6 +467,11 @@ function damageEnemy(enemy, bullet) {
         if (enemy.hp <= 0) {
             money += ENEMY_REWARD;
             updateMoneyText();
+            enemiesKilled++;
+            if (enemiesKilled >= enemiesPerWave) {
+                mainScene.sound.play('new_wave');
+                startNextWave();
+            }
         }
         console.log('Inimigo atingido! HP restante:', enemy.hp);
     }
@@ -485,7 +491,7 @@ function drawGrid(graphics) {
 }
 
 function update(time, delta) {
-    if (time > this.nextEnemy) {
+    if (enemiesSpawned < enemiesPerWave && time > this.nextEnemy) {
         var enemy = enemies.get();
         if (enemy) {
             enemy.setActive(true);
@@ -495,7 +501,12 @@ function update(time, delta) {
             let tipos = ['normal', 'fast', 'tank'];
             let tipo = Phaser.Utils.Array.GetRandom(tipos);
             enemy.startOnPath(path, tipo);
+
+            // Aumenta a vida dos inimigos conforme a onda
+            enemy.hp = Math.round(enemy.hp * (1 + (wave - 1) * 0.3));
+
             this.nextEnemy = time + Phaser.Math.Between(1000, 2000);
+            enemiesSpawned++;
         }
     }
 }
@@ -614,7 +625,14 @@ function updateMoneyText() {
 function updateVidasText() {
     if (vidasText) vidasText.setText('Vidas: ' + vidas);
 }
-
+function startNextWave() {
+   
+    wave++;
+    enemiesPerWave = Math.round(enemiesPerWave * 1.3) + 1; // aumenta a quantidade
+    enemiesSpawned = 0;
+    enemiesKilled = 0;
+    waveText.setText('Wave: ' + wave);
+}
 window.preload = preload;
 window.create = create;
 window.update = update;
