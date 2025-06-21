@@ -84,6 +84,7 @@ function preload() {
     this.load.audio('spawn_fast', 'assets/spawn_fast.mp3');
     this.load.audio('spawn_soldier', 'assets/spawn_soldier.mp3');
     this.load.audio('new_wave', 'assets/new_wave.mp3');
+    this.load.audio('musicafundo', 'assets/Combined_TDS_OST.mp3');
 }
 
 var Enemy = new Phaser.Class({
@@ -396,6 +397,7 @@ function texturaMapa(scene, caminhoMapa) {
     }
 }
 function create() {
+    
     mainScene = this; // -- salvar referencia da cena principal
     //colocando textura no mapa
     texturaMapa(this, caminhoMapa);
@@ -411,6 +413,8 @@ function create() {
     // path.draw(graphics);
 
     //criar inimigo
+
+    mainScene.sound.play('musicafundo', { loop: true, volume: 0.2 });
 
     this.anims.create({
         key: 'mob_normal_walk',
