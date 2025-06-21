@@ -22,7 +22,7 @@ var enemiesKilled = 0;
 var waveText;
 var vidas = 3;
 var vidasText;
-var money = 2000;
+var money = 200;
 var moneyText;
 const UPGRADE_COST = 80; // custo fixo para upar (pode ser por tipo/nível se quiser)
 const ENEMY_REWARD = 25;
@@ -49,9 +49,10 @@ for (let i = 0; i < mapRows; i++) {
 }
 const TURRET_TYPES = {
     basic: { range: 100, damage: 50, fireRate: 600, preco: 100, sprite: 'basic' },
-    sniper: { range: 200, damage: 150, fireRate: 1000, preco: 100, sprite: 'sniper' },
-    rapid: { range: 80, damage: 20, fireRate: 300, preco: 100, sprite: 'rapid' }
+    sniper: { range: 150, damage: 150, fireRate: 1000, preco: 200, sprite: 'sniper' },
+    rapid: { range: 80, damage: 20, fireRate: 300, preco: 80, sprite: 'rapid' }
 };
+
 const ENEMY_TYPES = {
     normal: { hp: 100, speed: 0.6, sprite: 'sprite1' },
     fast: { hp: 50, speed: 1, sprite: 'sprite5' },
@@ -93,12 +94,28 @@ var Enemy = new Phaser.Class({
             this.follower = { t: 0, vec: new Phaser.Math.Vector2() };
             this.type = 'normal';
             this.baseSpeed = ENEMY_TYPES.normal.speed;
+            //BARRA DE VIDA
+            this.hpBar = scene.add.graphics();
+            this.hpBar.setDepth(10);
+            this.hpText = scene.add.text(0, 0, '', {
+                fontSize: '12px',
+                color: '#fff',
+                fontStyle: 'bold',
+                stroke: '#000',
+                strokeThickness: 2
+            }).setOrigin(0.5, 1);
+            this.hpText.setDepth(11);
         },
     startOnPath: function (path, type = 'normal') {
         this.type = type;
         this.hp = ENEMY_TYPES[type].hp;
         this.baseSpeed = ENEMY_TYPES[type].speed;
-        // Toca a animação correta
+
+        // Aumenta a vida dos inimigos conforme a wave
+        this.hp = Math.round(this.hp * (1 + (wave - 1) * 0.3));
+        this.maxHp = this.hp; 
+
+        // animação 
         if (type === 'normal') {
             this.play('mob_normal_walk');
         } else if (type === 'fast') {
@@ -115,15 +132,47 @@ var Enemy = new Phaser.Class({
         if (this.hp <= 0) {
             this.setActive(false);
             this.setVisible(false);
+            if (this.hpBar) this.hpBar.clear();
+            if (this.hpText) this.hpText.setVisible(false);
         }
     },
     update: function (time, delta) {
         this.follower.t += ENEMY_SPEED * this.baseSpeed * delta;
         path.getPoint(this.follower.t, this.follower.vec);
         this.setPosition(this.follower.vec.x, this.follower.vec.y);
+        //barra de vida
+        // Atualiza barra de vida
+        if (this.hpBar) {
+            this.hpBar.clear();
+            if (this.active) {
+                // Tamanho e posição da barra
+                let barWidth = 30;
+                let barHeight = 5;
+                let x = this.x - barWidth / 2;
+                let y = this.y - 40;
+
+                // vida perdida(vermelho)
+                this.hpBar.fillStyle(0xff0000, 1);
+                this.hpBar.fillRect(x, y, barWidth, barHeight);
+
+                // vida atual (verde)
+                let hpPercent = Math.max(this.hp / this.maxHp, 0);
+                this.hpBar.fillStyle(0x00ff00, 1);
+                this.hpBar.fillRect(x, y, barWidth * hpPercent, barHeight);
+
+                this.hpText.setText(this.hp > 0 ? this.hp : 0);
+                this.hpText.setPosition(this.x, y - 2);
+                this.hpText.setVisible(true);
+
+            } else {
+                this.hpText.setVisible(false);
+            }
+        }
+
         if (this.follower.t > 1) {
             this.setActive(false);
             this.setVisible(false);
+            if (this.hpText) this.hpText.setVisible(false);
             // Perde uma vida
             vidas--;
             this.scene.sound.play('dano');
@@ -184,7 +233,7 @@ var Turret = new Phaser.Class({
     upgrade: function () {
 
         if (this.level > 4) {
-            alert('Torre já está no nível máximo!');
+            // alert('Torre já está no nível máximo!');
             return;
         }
         this.level++;
@@ -430,7 +479,7 @@ function create() {
         padding: { x: 10, y: 5 }
     });
     moneyText.setScrollFactor(0);
-    waveText = this.add.text(1100, 56, 'Wave: ' + wave, {
+    waveText = this.add.text(1050, 56, 'Wave: ' + wave, {
         fontSize: '32px',
         fill: '#fff',
         backgroundColor: '#444',
@@ -579,6 +628,18 @@ function AbrirHudTorre(turret) {
     document.getElementById('turret-damage').innerText = turret.damage;
     document.getElementById('turret-speed').innerText = (1000 / turret.fireRate).toFixed(2) + '/s';
     document.getElementById('upgrade-cost').innerText = 'Custo do Upgrade: $' + UPGRADE_COST;
+    const upgradeBtn = document.getElementById('upgrade-btn');
+    if (turret.level > 4) {
+        upgradeBtn.innerText = 'NÍVEL MÁXIMO';
+        upgradeBtn.disabled = true;
+        upgradeBtn.style.background = '#888';
+        upgradeBtn.style.cursor = 'not-allowed';
+    } else {
+        upgradeBtn.innerText = 'UPGRADE';
+        upgradeBtn.disabled = false;
+        upgradeBtn.style.background = '#5fcc5f';
+        upgradeBtn.style.cursor = 'pointer';
+    }
 }
 
 function FecharHudTorre() {
@@ -626,12 +687,14 @@ function updateVidasText() {
     if (vidasText) vidasText.setText('Vidas: ' + vidas);
 }
 function startNextWave() {
-   
+
     wave++;
-    enemiesPerWave = Math.round(enemiesPerWave * 1.3) + 1; // aumenta a quantidade
+    enemiesPerWave = Math.round(enemiesPerWave * 1.3) + 1; // aumenta a quantidade de inimigos por wave 
     enemiesSpawned = 0;
     enemiesKilled = 0;
     waveText.setText('Wave: ' + wave);
+    money += 100;
+    updateMoneyText();
 }
 window.preload = preload;
 window.create = create;
