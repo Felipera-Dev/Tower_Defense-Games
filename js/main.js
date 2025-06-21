@@ -15,6 +15,11 @@ var config = {
     },
 }
 // var game = new Phaser.Game(config);
+var wave = 1;
+var enemiesPerWave = 5;
+var enemiesSpawned = 0;
+var enemiesKilled = 0;
+var waveText;
 var vidas = 3;
 var vidasText;
 var money = 2000;
@@ -65,12 +70,14 @@ function preload() {
     // this.load.atlas('sprites', 'assets/spritesheet.png', 'assets/spritesheet.json');
     this.load.atlas('sprites', 'assets/soldiers.png', 'assets/soldiers.json');
     this.load.atlas('mobs', 'assets/mobs.png', 'assets/mobs.json');
+    this.load.atlas('explosion', 'assets/explosion.png', 'assets/explosion.json');
     this.load.image('bullet', 'assets/bullet.png');
     this.load.image('grass', 'assets/grass.png');
     this.load.image('road', 'assets/pedra.png');
     this.load.image('end', 'assets/tnt.png');
     this.load.image('start', 'assets/start.png');
-    this.load.audio('gameover', 'assets/usteve.ogg');
+    this.load.audio('dano', 'assets/usteve.ogg');
+    this.load.audio('gameover', 'assets/explosion.mp3');
     this.load.audio('levelup', 'assets/levelup.mp3');
     this.load.audio('spawn_sniper', 'assets/spawn_sniper.mp3');
     this.load.audio('spawn_fast', 'assets/spawn_fast.mp3');
@@ -118,13 +125,23 @@ var Enemy = new Phaser.Class({
             this.setVisible(false);
             // Perde uma vida
             vidas--;
-            this.scene.sound.play('gameover');
+            this.scene.sound.play('dano');
             updateVidasText();
             if (vidas <= 0) {
-                // Fim de jogo
-
-                alert('Game Over!');
-                location.reload(); // reinicia o jogo (ou faça algo melhor se quiser)
+                // Toca o som de game over
+                this.scene.sound.play('gameover');
+                // Cria a explosão no centro do mapa (ajuste x/y se quiser)
+                let explosion = this.scene.add.sprite(this.scene.cameras.main.centerX, this.scene.cameras.main.centerY, 'explosion');
+                explosion.setScale(4); // aumenta o tamanho da explosão se quiser
+                explosion.play('explosion_anim');
+                // Espera a animação terminar antes de mostrar o alert e recarregar
+                explosion.on('animationcomplete', function () {
+                    alert('Game Over!');
+                    location.reload();
+                });
+                // Impede múltiplos alerts/reloads
+                vidas = 0;
+                return;
             }
         }
 
@@ -164,7 +181,7 @@ var Turret = new Phaser.Class({
         this.level = 1;
     },
     upgrade: function () {
-        
+
         if (this.level > 4) {
             alert('Torre já está no nível máximo!');
             return;
@@ -175,7 +192,7 @@ var Turret = new Phaser.Class({
             this.damage = Math.round(this.damage * 1.5);
             this.range = Math.round(this.range * 1.5);
             this.fireRate = Math.round(this.fireRate * 1.2);
-        }else if (this.type === 'rapid') {
+        } else if (this.type === 'rapid') {
             this.damage = Math.round(this.damage * 1.2);
             this.range = Math.round(this.range * 1.1);
             this.fireRate = Math.round(this.fireRate * 0.8);
@@ -412,6 +429,22 @@ function create() {
         padding: { x: 10, y: 5 }
     });
     moneyText.setScrollFactor(0);
+    waveText = this.add.text(16, 96, 'Wave: ' + wave, {
+        fontSize: '32px',
+        fill: '#fff',
+        backgroundColor: '#444',
+        padding: { x: 10, y: 5 }
+    });
+    waveText.setScrollFactor(0);
+
+    // animacao final da explosao
+    this.anims.create({
+        key: 'explosion_anim',
+        frames: this.anims.generateFrameNames('explosion'),
+        frameRate: 40,
+        repeat: 0
+    });
+
 
     // -- adicionar torres
     this.input.on('gameobjectdown', function (pointer, gameObject) {
@@ -457,7 +490,7 @@ function update(time, delta) {
         if (enemy) {
             enemy.setActive(true);
             enemy.setVisible(true);
-            enemy.setScale(3); 
+            enemy.setScale(3);
             // Sorteia tipo de inimigo
             let tipos = ['normal', 'fast', 'tank'];
             let tipo = Phaser.Utils.Array.GetRandom(tipos);
@@ -486,12 +519,12 @@ function placeTurret(pointer) {
         if (turret) {
             console.log(selectedTurretType)
 
-            if(selectedTurretType == "sniper"){
+            if (selectedTurretType == "sniper") {
                 this.scene.sound.play('spawn_sniper');
-            }else if(selectedTurretType == "rapid"){
+            } else if (selectedTurretType == "rapid") {
                 this.scene.sound.play('spawn_fast');
-            }else{
-                 this.scene.sound.play('spawn_soldier');
+            } else {
+                this.scene.sound.play('spawn_soldier');
             }
             turret.setActive(true);
             turret.setVisible(true);
