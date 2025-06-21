@@ -1,2 +1,3 @@
-Jogo desenvolvido para a disciplina de Canvas e Games
-Rodar o HTML no Live Server
+Trabalho final da disciplina de Canvas e Games desenvolvento um jogo utilizando apenas JavaScrit e rodando no navegador , o jogo consiste em um tower defense inspirado
+na tematica de Minecrft sendo MUITO viciante !
+r
