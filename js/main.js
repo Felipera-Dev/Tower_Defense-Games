@@ -17,7 +17,7 @@ var config = {
 // var game = new Phaser.Game(config);
 var vidas = 3;
 var vidasText;
-var money = 200;
+var money = 2000;
 var moneyText;
 const UPGRADE_COST = 80; // custo fixo para upar (pode ser por tipo/nível se quiser)
 const ENEMY_REWARD = 25;
@@ -70,6 +70,11 @@ function preload() {
     this.load.image('road', 'assets/pedra.png');
     this.load.image('end', 'assets/tnt.png');
     this.load.image('start', 'assets/start.png');
+    this.load.audio('gameover', 'assets/usteve.ogg');
+    this.load.audio('levelup', 'assets/levelup.mp3');
+    this.load.audio('spawn_sniper', 'assets/spawn_sniper.mp3');
+    this.load.audio('spawn_fast', 'assets/spawn_fast.mp3');
+    this.load.audio('spawn_soldier', 'assets/spawn_soldier.mp3');
 }
 
 var Enemy = new Phaser.Class({
@@ -113,9 +118,11 @@ var Enemy = new Phaser.Class({
             this.setVisible(false);
             // Perde uma vida
             vidas--;
+            this.scene.sound.play('gameover');
             updateVidasText();
             if (vidas <= 0) {
                 // Fim de jogo
+
                 alert('Game Over!');
                 location.reload(); // reinicia o jogo (ou faça algo melhor se quiser)
             }
@@ -157,10 +164,28 @@ var Turret = new Phaser.Class({
         this.level = 1;
     },
     upgrade: function () {
+        
+        if (this.level > 4) {
+            alert('Torre já está no nível máximo!');
+            return;
+        }
         this.level++;
-        this.damage = Math.round(this.damage * 1.5);
-        this.range = Math.round(this.range * 1.2);
-        this.fireRate = Math.round(this.fireRate * 1.2);
+        this.scene.sound.play('levelup');
+        if (this.type === 'sniper') {
+            this.damage = Math.round(this.damage * 1.5);
+            this.range = Math.round(this.range * 1.5);
+            this.fireRate = Math.round(this.fireRate * 1.2);
+        }else if (this.type === 'rapid') {
+            this.damage = Math.round(this.damage * 1.2);
+            this.range = Math.round(this.range * 1.1);
+            this.fireRate = Math.round(this.fireRate * 0.8);
+        }
+        else {
+            this.damage = Math.round(this.damage * 1.5);
+            this.range = Math.round(this.range * 1.4);
+            this.fireRate = Math.round(this.fireRate * 0.8);
+        }
+
         console.log('Torre upada para o nível', this.level);
     },
     place: function (i, j, type = 'basic') {
@@ -194,7 +219,7 @@ var Bullet = new Phaser.Class({
             this.dx = 0; // -- deslocamento x do tiro
             this.dy = 0; // -- deslocamento y do tiro
             this.lifespan = 1000; // -- tempo de vida do tiro
-            this.speed = Phaser.Math.GetSpeed(1200, 1); // -- velocidade do tiro
+            this.speed = Phaser.Math.GetSpeed(1500, 1); // -- velocidade do tiro
 
         },
     fire: function (x, y, angle, damage) {
@@ -219,8 +244,8 @@ var Bullet = new Phaser.Class({
 
 var caminhoMapa = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
     [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,],
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,],
@@ -323,10 +348,10 @@ function create() {
     this.anims.create({
         key: 'mob_normal_walk',
         frames: [
-            { key: 'mobs', frame: 'sprite1' },
-            { key: 'mobs', frame: 'sprite2' },
-            { key: 'mobs', frame: 'sprite3' },
-            { key: 'mobs', frame: 'sprite4' }
+            { key: 'mobs', frame: 'sprite4' },
+            // { key: 'mobs', frame: 'sprite2' },
+            // { key: 'mobs', frame: 'sprite3' },
+            // { key: 'mobs', frame: 'sprite4' },
         ],
         frameRate: 8,
         repeat: -1
@@ -334,8 +359,8 @@ function create() {
     this.anims.create({
         key: 'mob_fast_walk',
         frames: [
-            { key: 'mobs', frame: 'sprite5' },
-            { key: 'mobs', frame: 'sprite6' }
+            { key: 'mobs', frame: 'sprite12' },
+            // { key: 'mobs', frame: 'sprite5' }
         ],
         frameRate: 12,
         repeat: -1
@@ -343,8 +368,8 @@ function create() {
     this.anims.create({
         key: 'mob_tank_walk',
         frames: [
-            { key: 'mobs', frame: 'sprite10' },
-            { key: 'mobs', frame: 'sprite11' }
+            { key: 'mobs', frame: 'sprite1' },
+            // { key: 'mobs', frame: 'sprite10' }
         ],
         frameRate: 6,
         repeat: -1
@@ -432,6 +457,7 @@ function update(time, delta) {
         if (enemy) {
             enemy.setActive(true);
             enemy.setVisible(true);
+            enemy.setScale(3); 
             // Sorteia tipo de inimigo
             let tipos = ['normal', 'fast', 'tank'];
             let tipo = Phaser.Utils.Array.GetRandom(tipos);
@@ -458,6 +484,15 @@ function placeTurret(pointer) {
     if (canPlaceTurret(i, j)) {
         var turret = turrets.get();
         if (turret) {
+            console.log(selectedTurretType)
+
+            if(selectedTurretType == "sniper"){
+                this.scene.sound.play('spawn_sniper');
+            }else if(selectedTurretType == "rapid"){
+                this.scene.sound.play('spawn_fast');
+            }else{
+                 this.scene.sound.play('spawn_soldier');
+            }
             turret.setActive(true);
             turret.setVisible(true);
             turret.place(i, j, selectedTurretType); // Passe o tipo selecionado
