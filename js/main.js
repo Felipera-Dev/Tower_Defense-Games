@@ -15,6 +15,12 @@ var config = {
     },
 }
 // var game = new Phaser.Game(config);
+var vidas = 3;
+var vidasText;
+var money = 200;
+var moneyText;
+const UPGRADE_COST = 80; // custo fixo para upar (pode ser por tipo/nível se quiser)
+const ENEMY_REWARD = 25;
 var rangeCircle = null;
 var graphics;
 var path;
@@ -37,9 +43,9 @@ for (let i = 0; i < mapRows; i++) {
     map.push(row);
 }
 const TURRET_TYPES = {
-    basic: { range: 100, damage: 50, fireRate: 600, sprite: 'basic' },
-    sniper: { range: 200, damage: 150, fireRate: 1000, sprite: 'sniper' },
-    rapid: { range: 80, damage: 20, fireRate: 300, sprite: 'rapid' }
+    basic: { range: 100, damage: 50, fireRate: 600, preco: 100, sprite: 'basic' },
+    sniper: { range: 200, damage: 150, fireRate: 1000, preco: 100, sprite: 'sniper' },
+    rapid: { range: 80, damage: 20, fireRate: 300, preco: 100, sprite: 'rapid' }
 };
 const ENEMY_TYPES = {
     normal: { hp: 100, speed: 0.6, sprite: 'sprite1' },
@@ -47,7 +53,7 @@ const ENEMY_TYPES = {
     tank: { hp: 300, speed: 0.3, sprite: 'sprite10' }
 };
 
-var selectedTurretType = 'basic';
+var selectedTurretType = null;
 
 function selectTurret(type) {
     selectedTurretType = type;
@@ -105,7 +111,16 @@ var Enemy = new Phaser.Class({
         if (this.follower.t > 1) {
             this.setActive(false);
             this.setVisible(false);
+            // Perde uma vida
+            vidas--;
+            updateVidasText();
+            if (vidas <= 0) {
+                // Fim de jogo
+                alert('Game Over!');
+                location.reload(); // reinicia o jogo (ou faça algo melhor se quiser)
+            }
         }
+
     }
 });
 
@@ -357,6 +372,23 @@ function create() {
     this.input.on('pointerdown', placeTurret); // -- colocar torre ao clicar
     // this.input.on('pointerdown', upgradeTurret);
 
+    //hud da vida e dinheiro
+    vidasText = this.add.text(16, 56, 'Vidas: ' + vidas, {
+        fontSize: '32px',
+        fill: '#fff',
+        backgroundColor: 'red',
+        padding: { x: 10, y: 5 }
+    });
+    vidasText.setScrollFactor(0);
+    moneyText = this.add.text(16, 16, 'Dinheiro: $' + money, {
+        fontSize: '32px',
+        fill: '#fff',
+        backgroundColor: 'green',
+        padding: { x: 10, y: 5 }
+    });
+    moneyText.setScrollFactor(0);
+
+    // -- adicionar torres
     this.input.on('gameobjectdown', function (pointer, gameObject) {
         if (gameObject instanceof Turret) {
             AbrirHudTorre(gameObject);
@@ -373,6 +405,10 @@ function damageEnemy(enemy, bullet) {
         bullet.setActive(false); // -- desativar bala
         bullet.setVisible(false); // -- esconder bala
         enemy.receiveDamage(bullet.damage); // -- inimigo recebe dano
+        if (enemy.hp <= 0) {
+            money += ENEMY_REWARD;
+            updateMoneyText();
+        }
         console.log('Inimigo atingido! HP restante:', enemy.hp);
     }
 }
@@ -409,6 +445,14 @@ function canPlaceTurret(i, j) {
     return caminhoMapa[i][j] === 0 && map[i][j] === 0; // -- verificar se a posicao esta livre
 }
 function placeTurret(pointer) {
+    if (!selectedTurretType) {
+        // alert('Selecione o tipo de torre antes de colocar!');
+        return;
+    }
+    if (money < TURRET_TYPES[selectedTurretType].preco) {
+        alert('Dinheiro insuficiente!');
+        return;
+    }
     var i = Math.floor(pointer.y / 64);
     var j = Math.floor(pointer.x / 64);
     if (canPlaceTurret(i, j)) {
@@ -417,6 +461,9 @@ function placeTurret(pointer) {
             turret.setActive(true);
             turret.setVisible(true);
             turret.place(i, j, selectedTurretType); // Passe o tipo selecionado
+            money -= TURRET_TYPES[selectedTurretType].preco;
+            updateMoneyText();
+            selectedTurretType = null;
         }
     } else {
         console.log('Posicao ocupada');
@@ -452,6 +499,7 @@ function AbrirHudTorre(turret) {
     document.getElementById('turret-range').innerText = turret.range;
     document.getElementById('turret-damage').innerText = turret.damage;
     document.getElementById('turret-speed').innerText = (1000 / turret.fireRate).toFixed(2) + '/s';
+    document.getElementById('upgrade-cost').innerText = 'Custo do Upgrade: $' + UPGRADE_COST;
 }
 
 function FecharHudTorre() {
@@ -466,7 +514,13 @@ document.getElementById('close-turret-info').onclick = function () {
 
 document.getElementById('upgrade-btn').onclick = function () {
     if (selectedTurret) {
+        if (money < UPGRADE_COST) {
+            alert('Dinheiro insuficiente para upgrade!');
+            return;
+        }
+        money -= UPGRADE_COST;
         selectedTurret.upgrade();
+        updateMoneyText();
         AbrirHudTorre(selectedTurret); // Atualiza painel
         showRangeCircle(mainScene, selectedTurret);
     }
@@ -474,8 +528,8 @@ document.getElementById('upgrade-btn').onclick = function () {
 function showRangeCircle(scene, turret) {
     if (rangeCircle) rangeCircle.destroy();
     rangeCircle = scene.add.graphics({ x: turret.x, y: turret.y });
-    rangeCircle.fillStyle(0x5fccff, 0.2); // cor azul clara, 20% opaco
-    rangeCircle.lineStyle(3, 0x5fccff, 0.8); // borda azul
+    rangeCircle.fillStyle(0x5fccff, 0.2);
+    rangeCircle.lineStyle(3, 0x5fccff, 0.8);
     rangeCircle.fillCircle(0, 0, turret.range);
     rangeCircle.strokeCircle(0, 0, turret.range);
     rangeCircle.setDepth(1000); // garantir que fique acima dos sprites
@@ -486,8 +540,12 @@ function hideRangeCircle() {
         rangeCircle = null;
     }
 }
-
-
+function updateMoneyText() {
+    if (moneyText) moneyText.setText('Dinheiro: $' + money);
+}
+function updateVidasText() {
+    if (vidasText) vidasText.setText('Vidas: ' + vidas);
+}
 
 window.preload = preload;
 window.create = create;
