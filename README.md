@@ -14,7 +14,7 @@ Instruções de como jogar:
 * O objetivo do jogo é não deixar 3 mobs chegarem até a torre, senão perde.
 
 Desenvolvedores do game:
-Alex Narok Stavasz
-Felipe da Veiga Gomes
-Logan Ail Bernardes Borges
-Rogerio de Abreu Mar
+* Alex Narok Stavasz
+* Felipe da Veiga Gomes
+* Logan Ail Bernardes Borges
+* Rogerio de Abreu Mar
