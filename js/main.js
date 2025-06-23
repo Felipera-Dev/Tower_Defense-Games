@@ -24,7 +24,7 @@ var vidas = 3;
 var vidasText;
 var money = 200;
 var moneyText;
-const UPGRADE_COST = 150; // custo fixo para upar (pode ser por tipo/nível se quiser)
+const UPGRADE_COST = 150; 
 const ENEMY_REWARD = 15;
 var rangeCircle = null;
 var graphics;
@@ -33,7 +33,7 @@ var enemies;
 var turrets;
 var bullets;
 var mainScene = null;
-var ENEMY_SPEED = 0.2 / 10000; // velocidade do inimigo
+var ENEMY_SPEED = 0.2 / 10000;
 var BULLET_DAMAGE = 50
 var tileSize = 64;
 var mapRows = Math.floor(config.height / tileSize);
@@ -111,7 +111,7 @@ var Enemy = new Phaser.Class({
         this.type = type;
         this.hp = ENEMY_TYPES[type].hp;
         this.baseSpeed = ENEMY_TYPES[type].speed;
-
+        this.maxHp = this.hp;
         // Aumenta a vida dos inimigos conforme a wave
         this.hp = Math.round(this.hp * (1 + (wave - 1) * 0.3));
         this.maxHp = this.hp; 
@@ -147,7 +147,7 @@ var Enemy = new Phaser.Class({
             this.hpBar.clear();
             if (this.active) {
                 // Tamanho e posição da barra
-                let barWidth = 30;
+                let barWidth = 20;
                 let barHeight = 5;
                 let x = this.x - barWidth / 2;
                 let y = this.y - 40;
@@ -556,7 +556,7 @@ function update(time, delta) {
             enemy.startOnPath(path, tipo);
 
             // Aumenta a vida dos inimigos conforme a onda
-            enemy.hp = Math.round(enemy.hp * (1 + (wave - 1) * 0.3));
+            // enemy.hp = Math.round(enemy.hp * (1 + (wave - 1) * 0.3));
 
             this.nextEnemy = time + Phaser.Math.Between(1000, 2000);
             enemiesSpawned++;
